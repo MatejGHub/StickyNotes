@@ -33,10 +33,14 @@ function sticky_comment_check_throttle($action = 'general', $max_requests = 10, 
  * Returns 'sent', 'failed', or 'skipped'.
  */
 function sticky_comment_send_notification($type, $note_id, $content, $post_id, $user_id, $guest_ctx, $assigned_to, $priority, $title, $device) {
+    error_log('[Sticky Notes][Email] === START email notification (type: ' . $type . ', note #' . $note_id . ') ===');
+
     $notification_email = get_option('sticky_comment_notification_email', '');
     if (empty($notification_email) || !is_email($notification_email)) {
+        error_log('[Sticky Notes][Email] SKIPPED — notification email is empty or invalid: "' . $notification_email . '"');
         return array('status' => 'skipped');
     }
+    error_log('[Sticky Notes][Email] Notification recipient: ' . $notification_email);
 
     // Fetch full note from DB for comments and images
     global $wpdb;
@@ -115,7 +119,6 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
     $body .= str_repeat('-', 40) . "\n\n";
     $body .= "Website: " . $site_name . "\n";
     $body .= "Domain: " . $site_url . "\n";
-    $body .= "Note ID: " . $note_id . "\n";
     if (!empty($title)) {
         $body .= "Title: " . $title . "\n";
     }
@@ -126,7 +129,8 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
     }
     $body .= "Device: " . (!empty($device) ? ucfirst($device) : 'Unknown') . "\n";
     if (!empty($page_url)) {
-        $body .= "Link: " . $page_url . "#sticky-note-" . $note_id . "\n";
+        $sv_url = add_query_arg('sv', $note_id, $page_url);
+        $body .= "Link: " . $sv_url . "\n";
     }
     $body .= "\nContent:\n" . $content . "\n";
     $body .= $comments_text;
@@ -136,6 +140,11 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
     $mail_error = null;
     $capture_error = function($wp_error) use (&$mail_error) {
         $mail_error = $wp_error;
+        error_log('[Sticky Notes][Email] wp_mail_failed hook fired — ' . $wp_error->get_error_message());
+        $err_data = $wp_error->get_error_data();
+        if (!empty($err_data)) {
+            error_log('[Sticky Notes][Email] wp_mail_failed data: ' . (is_string($err_data) ? $err_data : wp_json_encode($err_data)));
+        }
     };
     add_action('wp_mail_failed', $capture_error);
 
@@ -146,12 +155,35 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
         $headers[] = 'From: ' . $site_name . ' <' . $admin_email . '>';
     }
 
+    // Log mail environment before sending
+    error_log('[Sticky Notes][Email] From header: ' . (!empty($headers) ? implode(', ', $headers) : '(none, using server default)'));
+    error_log('[Sticky Notes][Email] Admin email: ' . ($admin_email ?: '(not set)'));
+    error_log('[Sticky Notes][Email] Subject: ' . $subject);
+    error_log('[Sticky Notes][Email] Body length: ' . strlen($body) . ' chars');
+    error_log('[Sticky Notes][Email] PHP mail function exists: ' . (function_exists('mail') ? 'yes' : 'NO'));
+
+    // Detect if an SMTP plugin is overriding wp_mail
+    $mailer_info = 'default PHP mail()';
+    if (class_exists('WPMailSMTP\\MailCatcherInterface') || function_exists('wp_mail_smtp')) {
+        $mailer_info = 'WP Mail SMTP plugin';
+    } elseif (class_exists('PostmanOptions')) {
+        $mailer_info = 'Post SMTP plugin';
+    } elseif (class_exists('FluentMail\\App\\Services\\Mailer\\Manager')) {
+        $mailer_info = 'FluentSMTP plugin';
+    } elseif (has_filter('wp_mail')) {
+        $mailer_info = 'custom wp_mail filter detected';
+    }
+    error_log('[Sticky Notes][Email] Mailer: ' . $mailer_info);
+
+    error_log('[Sticky Notes][Email] Calling wp_mail()...');
     $sent = wp_mail($notification_email, $subject, $body, $headers);
+    error_log('[Sticky Notes][Email] wp_mail() returned: ' . ($sent ? 'TRUE' : 'FALSE'));
 
     remove_action('wp_mail_failed', $capture_error);
 
     if ($sent) {
-        error_log('[Sticky Notes] Email sent to ' . $notification_email . ' for note #' . $note_id . ' (' . $type . ')');
+        error_log('[Sticky Notes][Email] === SUCCESS — email accepted for delivery to ' . $notification_email . ' for note #' . $note_id . ' (' . $type . ') ===');
+        error_log('[Sticky Notes][Email] NOTE: "accepted for delivery" means PHP/mailer did not report an error. If the email does not arrive, check your hosting mail logs or spam folder.');
         return array('status' => 'sent');
     } else {
         $error_msg = 'Unknown error';
@@ -172,7 +204,7 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
                 $user_msg = 'Could not connect to the mail server. Check your SMTP settings.';
             }
         }
-        error_log('[Sticky Notes] Email FAILED to ' . $notification_email . ' for note #' . $note_id . ' (' . $type . ') — Error: ' . $error_msg);
+        error_log('[Sticky Notes][Email] === FAILED — email to ' . $notification_email . ' for note #' . $note_id . ' (' . $type . ') — Error: ' . $error_msg . ' ===');
         return array('status' => 'failed', 'reason' => $user_msg);
     }
 }
@@ -396,8 +428,14 @@ function get_sticky_notes_by_post_id() {
         wp_send_json_error('Invalid nonce');
     }
 
+    // View-only mode: allow fetching a single note by ID without authentication
+    $is_view_only = !empty($_POST['view_only']) && intval($_POST['view_only']) === 1;
+    $view_note_id = isset($_POST['view_note_id']) ? intval($_POST['view_note_id']) : 0;
+
     $guest_ctx = null;
-    if (!is_user_logged_in()) {
+    if ($is_view_only && $view_note_id > 0) {
+        // View-only access — no login or guest context required
+    } elseif (!is_user_logged_in()) {
         if (!function_exists('sticky_comment_get_guest_context_from_request')) {
             wp_send_json_error('User must be logged in');
         }
@@ -417,6 +455,15 @@ function get_sticky_notes_by_post_id() {
         wp_send_json_error('Database table is not available');
     }
 
+    $table_name = $wpdb->prefix . 'sticky_notes';
+
+    // View-only: fetch only the single requested note
+    if ($is_view_only && $view_note_id > 0) {
+        $sql = "SELECT id, post_id, user_id, guest_author_id, shared_link_id, content, title, images, comments, position_x, position_y, element_path, assigned_to, is_collapsed, is_completed, is_done, priority, device
+                 FROM $table_name WHERE id = %d LIMIT 1";
+        $notes = $wpdb->get_results($wpdb->prepare($sql, $view_note_id), ARRAY_A);
+    } else {
+
     $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
     if ($post_id === 0) {
         $page_url = isset($_POST['page_url']) ? esc_url_raw($_POST['page_url']) : '';
@@ -427,8 +474,6 @@ function get_sticky_notes_by_post_id() {
     if ($post_id === 0) {
         wp_send_json_error('Invalid post ID');
     }
-
-    $table_name = $wpdb->prefix . 'sticky_notes';
 
     $include_id = isset($_POST['include_id']) ? intval($_POST['include_id']) : 0;
     $include_completed = !empty($_POST['include_completed']) ? 1 : 0;
@@ -464,6 +509,8 @@ function get_sticky_notes_by_post_id() {
                  FROM $table_name WHERE post_id = %d AND is_completed = 0 AND is_done = 0" . $where_guest . " ORDER BY updated_at DESC";
         $notes = $wpdb->get_results($wpdb->prepare($sql, $params), ARRAY_A);
     }
+
+    } // end non-view-only branch
 
     if ($notes) {
         // Decrypt sensitive fields before returning

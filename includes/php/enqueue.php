@@ -323,14 +323,25 @@ function sticky_comment_enqueue_scripts() {
     }
     $is_guest = false;
     $guest_ctx = null;
+    $is_view_only = false;
+    $view_note_id = 0;
+
+    // Check for view-only mode via ?sv=NOTE_ID (public read-only access to a single note)
+    if (isset($_GET['sv']) && absint($_GET['sv']) > 0) {
+        $is_view_only = true;
+        $view_note_id = absint($_GET['sv']);
+    }
+
     if (is_user_logged_in()) {
+    } elseif ($is_view_only) {
+        // Allow script loading for view-only mode without login
     } elseif (function_exists('sticky_comment_get_guest_context')) {
         $guest_ctx = sticky_comment_get_guest_context();
         if ($guest_ctx !== null) {
             $is_guest = true;
         }
     }
-    if (!is_user_logged_in() && !$is_guest) {
+    if (!is_user_logged_in() && !$is_guest && !$is_view_only) {
         return;
     }
 
@@ -430,9 +441,26 @@ function sticky_comment_enqueue_scripts() {
     $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
     $uri  = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
     $page_url = esc_url_raw($scheme . '://' . $host . $uri);
+    // Strip the sv query param so it doesn't pollute stored URLs
+    $page_url = remove_query_arg('sv', $page_url);
     $max_notes = (int) get_option('sticky_comment_max_notes', 10);
 
-    if ($is_guest) {
+    if ($is_view_only) {
+        $base = array(
+            'ajax_url'          => admin_url('admin-ajax.php'),
+            'nonce'             => wp_create_nonce('sticky_comment_nonce'),
+            'post_id'           => $post_id,
+            'page_url'          => $page_url,
+            'max_notes'         => 1,
+            'can_edit'          => 0,
+            'view_only'         => 1,
+            'view_note_id'      => $view_note_id,
+            'current_user_id'   => 0,
+            'current_user_display' => '',
+            'current_user_email'   => '',
+            'current_user_first_name' => '',
+        );
+    } elseif ($is_guest) {
         $base = array(
             'ajax_url'          => admin_url('admin-ajax.php'),
             'nonce'             => wp_create_nonce('sticky_comment_nonce'),

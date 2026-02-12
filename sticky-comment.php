@@ -21,18 +21,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Dev-only: route emails through Mailpit (Docker local mail catcher)
-/* add_action('phpmailer_init', function($phpmailer) {
-    $phpmailer->isSMTP();
-    $phpmailer->Host = 'mailpit';
-    $phpmailer->Port = 1025;
-    $phpmailer->SMTPAuth = false;
-    $phpmailer->SMTPSecure = '';
-    $phpmailer->SMTPAutoTLS = false;
-    $phpmailer->From = 'wordpress@sticky-notes.local';
-    $phpmailer->FromName = 'Sticky Notes';
-});  */
-
 require_once plugin_dir_path(__FILE__) . 'includes/php/enqueue.php';
 require_once plugin_dir_path(__FILE__) . 'includes/php/guest-link.php';
 require_once plugin_dir_path(__FILE__) . 'includes/php/ajax-calls.php';

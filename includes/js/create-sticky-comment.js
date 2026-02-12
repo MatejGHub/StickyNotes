@@ -53,6 +53,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
   const opts = options || {};
   const skipLimit = !!opts.skipLimit;
   const markCompleted = !!opts.markCompleted;
+  const viewOnly = !!opts.viewOnly;
   if (typeof elementPath === "string" && elementPath.length > 1000) {
     elementPath = elementPath.slice(0, 1000);
   }
@@ -376,7 +377,9 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
         saveButton.classList.add("sticky-save-visible");
       });
       item.appendChild(thumb);
-      item.appendChild(remove);
+      if (!viewOnly) {
+        item.appendChild(remove);
+      }
       imagesList.appendChild(item);
     });
   }
@@ -435,6 +438,24 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
   wrapper.appendChild(hiddenFile);
   wrapper.appendChild(counterWrap);
   wrapper.appendChild(saveButton);
+
+  // View-only mode: lock down all interactive elements
+  if (viewOnly) {
+    wrapper.dataset.viewOnly = "1";
+    textArea.readOnly = true;
+    textArea.style.cursor = "default";
+    saveButton.style.display = "none";
+    close.style.display = "none";
+    actions.style.display = "none";
+    hiddenFile.style.display = "none";
+    commentsForm.style.display = "none";
+    counterWrap.style.display = "none";
+    titleIcon.style.display = "none";
+    titleInput.style.display = "none";
+    titleText.style.cursor = "default";
+    handle.style.cursor = "default";
+  }
+
   function updateCharUI() {
     try {
       const len = Math.min(textArea.value.length, MAX_CHARS);
@@ -588,13 +609,13 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
         contentWrap.appendChild(text);
         row.appendChild(contentWrap);
 
-        // Delete own comment button
+        // Delete own comment button (hidden in view-only mode)
         try {
           const currentId = Number(
             window.my_ajax_object && window.my_ajax_object.current_user_id
           );
           const isOwner = currentId && Number(c && c.user_id) === currentId;
-          if (isOwner) {
+          if (isOwner && !viewOnly) {
             const delBtn = document.createElement("button");
             delBtn.type = "button";
             delBtn.className = "sticky-comment-delete";
@@ -1061,6 +1082,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
     isDragging = false;
 
   handle.addEventListener("mousedown", (e) => {
+    if (viewOnly) return;
     if (
       (e.target &&
         e.target.closest &&
@@ -1226,6 +1248,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
     deleteBtn.className = "sticky-images-modal-delete";
     deleteBtn.title = "Delete image";
     deleteBtn.textContent = "Delete";
+    if (viewOnly) deleteBtn.style.display = "none";
     const actionsBar = document.createElement("div");
     actionsBar.className = "sticky-images-modal-actions";
     const imgEl = document.createElement("img");

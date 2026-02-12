@@ -1,8 +1,13 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const isViewOnly = Number(my_ajax_object && my_ajax_object.view_only) === 1;
+  const viewNoteId = Number(my_ajax_object && my_ajax_object.view_note_id) || 0;
   const postId = Number(my_ajax_object && my_ajax_object.post_id);
   const pageUrl =
     (my_ajax_object && my_ajax_object.page_url) || window.location.href;
-  if ((!postId || Number.isNaN(postId)) && !pageUrl) {
+
+  if (isViewOnly && viewNoteId > 0) {
+    // View-only mode: skip normal checks, fetch only the specific note
+  } else if ((!postId || Number.isNaN(postId)) && !pageUrl) {
     return;
   }
 
@@ -25,6 +30,13 @@ document.addEventListener("DOMContentLoaded", function () {
     include_id: includeId ? String(includeId) : "",
     include_completed: "1",
   };
+
+  // View-only mode: tell the backend to fetch only the specific note
+  if (isViewOnly && viewNoteId > 0) {
+    fetchParams.view_only = "1";
+    fetchParams.view_note_id = String(viewNoteId);
+  }
+
   if (my_ajax_object.is_guest === 1 && my_ajax_object.guest_token && my_ajax_object.guest_id) {
     fetchParams.guest_token = my_ajax_object.guest_token;
     fetchParams.guest_id = my_ajax_object.guest_id;
@@ -49,14 +61,16 @@ document.addEventListener("DOMContentLoaded", function () {
           const wrapper =
             window.StickyComment && window.StickyComment.createStickyNote
               ? window.StickyComment.createStickyNote(x, y, "", {
-                  skipLimit: isCompleted,
+                  skipLimit: isCompleted || isViewOnly,
                   markCompleted: isCompleted,
                   device: note.device || "",
+                  viewOnly: isViewOnly,
                 })
               : window.createStickyNote(x, y, "", {
-                  skipLimit: isCompleted,
+                  skipLimit: isCompleted || isViewOnly,
                   markCompleted: isCompleted,
                   device: note.device || "",
+                  viewOnly: isViewOnly,
                 });
           if (!wrapper) {
             return;
@@ -164,20 +178,24 @@ document.addEventListener("DOMContentLoaded", function () {
           if (window.updateBubbleCount) {
             window.updateBubbleCount();
           }
-          // If URL contains a hash for a sticky note, scroll to it
-          if (
+
+          // Determine which note to scroll to: view-only note or hash fragment
+          let scrollTarget = null;
+          if (isViewOnly && viewNoteId > 0) {
+            scrollTarget = document.getElementById("sticky-note-" + viewNoteId);
+          } else if (
             window.location.hash &&
             window.location.hash.startsWith("#sticky-note-")
           ) {
-            const target = document.querySelector(window.location.hash);
-            if (target) {
-              target.scrollIntoView({ behavior: "smooth", block: "center" });
-              target.classList.add("sticky-pulse-animation");
-              // Remove the animation class after it completes
-              setTimeout(() => {
-                target.classList.remove("sticky-pulse-animation");
-              }, 2000);
-            }
+            scrollTarget = document.querySelector(window.location.hash);
+          }
+
+          if (scrollTarget) {
+            scrollTarget.scrollIntoView({ behavior: "smooth", block: "center" });
+            scrollTarget.classList.add("sticky-pulse-animation");
+            setTimeout(() => {
+              scrollTarget.classList.remove("sticky-pulse-animation");
+            }, 2000);
           }
         }, 100);
       } else {

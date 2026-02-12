@@ -516,7 +516,7 @@ function render_sticky_notes_table() {
 
             // Get permalink for the note's post
             $post_link = $is_global ? admin_url('admin.php?page=sticky-comments') : get_permalink($note->post_id);
-            $note_link = esc_url($post_link . '#sticky-note-' . $note->id);
+            $note_link = esc_url(add_query_arg('sv', $note->id, $post_link));
             // Resolve username/display name (or Guest + link name)
             $user_display = 'Unknown';
             if (!empty($note->user_id) && (int) $note->user_id > 0) {
