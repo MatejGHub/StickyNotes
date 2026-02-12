@@ -14,19 +14,23 @@ function sticky_comment_check_throttle($action = 'general', $max_requests = 10, 
     $requests = get_transient($transient_key);
 
     if ($requests === false) {
+        // First request in this window
         set_transient($transient_key, 1, $time_window);
         return true;
     }
 
     if ($requests >= $max_requests) {
-        return false;
+        return false; // Throttled
     }
 
+    // Increment counter
     set_transient($transient_key, $requests + 1, $time_window);
     return true;
 }
 
+// AJAX handler for storing sticky comment
 function sticky_comment_save() {
+    // Check throttling first (before other checks to save resources)
     $throttle_limit = get_option('sticky_comment_throttle_limit', 20); // requests per minute
     if (!sticky_comment_check_throttle('save_note', $throttle_limit, 60)) {
         wp_send_json_error(array(
@@ -35,6 +39,7 @@ function sticky_comment_save() {
         ));
     }
 
+    // Check nonce for security
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'sticky_comment_nonce')) {
         wp_send_json_error(array('message' => __('Your session expired. Please refresh the page and try again.', 'sticky-comment')));
     }
@@ -106,8 +111,11 @@ function sticky_comment_save() {
         $device = '';
     }
 
+    // Additional title validation
     if (!empty($title)) {
+        // Ensure title is not too long (should match frontend limit)
         $title = substr($title, 0, 100);
+        // Additional XSS protection (though sanitize_text_field should handle this)
         $title = wp_strip_all_tags($title);
         $title = trim($title);
     }
@@ -200,17 +208,21 @@ function sticky_comment_save() {
 add_action('wp_ajax_sticky_comment', 'sticky_comment_save');
 add_action('wp_ajax_nopriv_sticky_comment', 'sticky_comment_save');
 
+
+// AJAX handler to fetch sticky notes by post ID (logged-in or valid guest link)
 add_action('wp_ajax_get_sticky_notes_by_post_id', 'get_sticky_notes_by_post_id');
 add_action('wp_ajax_nopriv_get_sticky_notes_by_post_id', 'get_sticky_notes_by_post_id');
 
 function get_sticky_notes_by_post_id() {
-    if (!sticky_comment_check_throttle('get_notes', 30, 60)) {
+    // Check throttling first
+    if (!sticky_comment_check_throttle('get_notes', 30, 60)) { // Allow more requests for reading
         wp_send_json_error(array(
             'message' => __('Too many requests. Please wait a moment before trying again.', 'sticky-comment'),
             'retry_after' => 60
         ));
     }
 
+    // Check nonce for security
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'sticky_comment_nonce')) {
         wp_send_json_error('Invalid nonce');
     }
@@ -285,11 +297,13 @@ function get_sticky_notes_by_post_id() {
     }
 
     if ($notes) {
+        // Decrypt sensitive fields before returning
         foreach ($notes as &$n) {
             $n['content'] = sticky_comment_decrypt($n['content']);
             $n['element_path'] = sticky_comment_decrypt($n['element_path']);
             $n['assigned_to'] = sticky_comment_decrypt($n['assigned_to']);
             if (isset($n['title'])) { $n['title'] = sticky_comment_decrypt($n['title']); }
+            // Images: decrypt and also resolve thumbnail URLs for convenience
             $image_ids = array();
             if (isset($n['images']) && $n['images'] !== null && $n['images'] !== '') {
                 $images_json = sticky_comment_decrypt($n['images']);
@@ -302,6 +316,7 @@ function get_sticky_notes_by_post_id() {
             $urls = array();
             if (!empty($image_ids)) {
                 foreach ($image_ids as $iid) {
+                    // Resolve full-size URL so modal can show true size up to viewport
                     $full = wp_get_attachment_image_src($iid, 'full');
                     if ($full && is_array($full) && isset($full[0])) {
                         $urls[] = esc_url($full[0]);
@@ -315,18 +330,21 @@ function get_sticky_notes_by_post_id() {
             }
             $n['image_urls'] = $urls;
 
+            // Comments: decrypt, enrich with first_name/email, then pass as JSON string
             if (isset($n['comments']) && $n['comments'] !== null && $n['comments'] !== '') {
                 $dec = sticky_comment_decrypt($n['comments']);
                 $arr = json_decode($dec, true);
                 if (is_array($arr)) {
                     foreach ($arr as &$c) {
                         $uid = isset($c['user_id']) ? intval($c['user_id']) : 0;
+                        // Ensure first_name present
                         if (!isset($c['first_name']) || (is_string($c['first_name']) && trim($c['first_name']) === '')) {
                             if ($uid > 0) {
                                 $fn = get_user_meta($uid, 'first_name', true);
                                 if (is_string($fn)) { $c['first_name'] = $fn; }
                             }
                         }
+                        // Ensure user_email present
                         if (!isset($c['user_email']) || (is_string($c['user_email']) && trim($c['user_email']) === '')) {
                             if ($uid > 0) {
                                 $u = get_userdata($uid);
@@ -350,8 +368,10 @@ function get_sticky_notes_by_post_id() {
     }
 }
 
+// Add or append a comment to a sticky note
 add_action('wp_ajax_sticky_add_comment', 'sticky_add_comment');
 function sticky_add_comment() {
+    // Basic checks
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'sticky_comment_nonce')) {
         wp_send_json_error(array('message' => 'Invalid nonce'));
     }
@@ -379,6 +399,7 @@ function sticky_add_comment() {
         wp_send_json_error(array('message' => 'Database table is not available'));
     }
 
+    // Load current comments
     $row = $wpdb->get_row($wpdb->prepare("SELECT comments FROM $table_name WHERE id = %d", $note_id));
     if (!$row) {
         wp_send_json_error(array('message' => 'Note not found'));
@@ -419,6 +440,7 @@ function sticky_add_comment() {
     ));
 }
 
+// Allow users to delete their own comments (or users with min capability)
 add_action('wp_ajax_sticky_delete_comment', 'sticky_delete_comment');
 function sticky_delete_comment() {
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'sticky_comment_nonce')) {
@@ -486,6 +508,7 @@ function sticky_delete_comment() {
     ));
 }
 
+// AJAX user search for assignee suggestions
 add_action('wp_ajax_search_sticky_users', 'sticky_comment_search_users');
 function sticky_comment_search_users() {
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'sticky_comment_nonce')) {
@@ -519,10 +542,13 @@ function sticky_comment_search_users() {
     wp_send_json_success($results);
 }
 
+
+// Delete sticky note AJAX handler
 add_action('wp_ajax_delete_sticky_note', 'delete_sticky_note');
 add_action('wp_ajax_nopriv_delete_sticky_note', 'delete_sticky_note');
 function delete_sticky_note() {
-    if (!sticky_comment_check_throttle('delete_note', 10, 60)) {
+    // Check throttling first
+    if (!sticky_comment_check_throttle('delete_note', 10, 60)) { // Stricter limit for deletions
         wp_send_json_error(array(
             'message' => __('Too many delete requests. Please wait a moment before trying again.', 'sticky-comment'),
             'retry_after' => 60
@@ -581,6 +607,7 @@ function delete_sticky_note() {
                     foreach ($decoded_ids as $aid) {
                         $aid = intval($aid);
                         if ($aid > 0) {
+                            // Force delete from media library
                             wp_delete_attachment($aid, true);
                         }
                     }
@@ -595,8 +622,10 @@ function delete_sticky_note() {
     }
 }
 
+// Upload image for sticky note (to Media Library)
 add_action('wp_ajax_sticky_upload_note_image', 'sticky_upload_note_image');
 function sticky_upload_note_image() {
+    // Throttle uploads a bit
     if (!sticky_comment_check_throttle('upload_image', 12, 60)) {
         wp_send_json_error(array('message' => __('Too many uploads. Please wait a moment.', 'sticky-comment')));
     }
@@ -615,6 +644,7 @@ function sticky_upload_note_image() {
         wp_send_json_error(array('message' => 'No file uploaded'));
     }
 
+    // Load media libs
     if (!function_exists('media_handle_upload')) {
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -628,6 +658,7 @@ function sticky_upload_note_image() {
     }
 
     $thumb = wp_get_attachment_image_src($attachment_id, 'thumbnail');
+    // Use full-size URL for accurate display in modal
     $full = wp_get_attachment_image_src($attachment_id, 'full');
     $resp = array(
         'id' => (int)$attachment_id,
@@ -637,8 +668,10 @@ function sticky_upload_note_image() {
     wp_send_json_success($resp);
 }
 
+// Delete a single uploaded image from the Media Library
 add_action('wp_ajax_sticky_delete_note_image', 'sticky_delete_note_image');
 function sticky_delete_note_image() {
+    // Throttle deletes slightly
     if (!sticky_comment_check_throttle('delete_image', 12, 60)) {
         wp_send_json_error(array('message' => __('Too many delete requests. Please wait a moment.', 'sticky-comment')));
     }
