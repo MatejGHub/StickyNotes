@@ -28,6 +28,155 @@ function sticky_comment_check_throttle($action = 'general', $max_requests = 10, 
     return true;
 }
 
+/**
+ * Send email notification when a sticky note is saved.
+ * Returns 'sent', 'failed', or 'skipped'.
+ */
+function sticky_comment_send_notification($type, $note_id, $content, $post_id, $user_id, $guest_ctx, $assigned_to, $priority, $title, $device) {
+    $notification_email = get_option('sticky_comment_notification_email', '');
+    if (empty($notification_email) || !is_email($notification_email)) {
+        return array('status' => 'skipped');
+    }
+
+    // Fetch full note from DB for comments and images
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'sticky_notes';
+    $note_row = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $note_id));
+
+    // Resolve author name and email
+    $author = __('Unknown', 'sticky-comment');
+    $author_email = '';
+    if ($user_id > 0) {
+        $user = get_user_by('id', $user_id);
+        if ($user) {
+            $author = $user->display_name ? $user->display_name : $user->user_login;
+            $author_email = $user->user_email;
+        }
+    } elseif ($guest_ctx !== null) {
+        $author = __('Guest', 'sticky-comment');
+    }
+
+    // Resolve page URL
+    $page_url = '';
+    if ($post_id > 0 && get_post_status($post_id)) {
+        $page_url = get_permalink($post_id);
+    }
+    if (empty($page_url) && isset($_POST['page_url'])) {
+        $page_url = esc_url_raw($_POST['page_url']);
+    }
+
+    // Map priority
+    $priority_labels = array(1 => 'Low', 2 => 'Medium', 3 => 'High');
+    $priority_label = isset($priority_labels[$priority]) ? $priority_labels[$priority] : 'Medium';
+
+    // Resolve comments
+    $comments_text = '';
+    if ($note_row && !empty($note_row->comments)) {
+        $dec = sticky_comment_decrypt($note_row->comments);
+        $comments_arr = json_decode($dec, true);
+        if (is_array($comments_arr) && count($comments_arr) > 0) {
+            $comments_text .= "\nComments (" . count($comments_arr) . "):\n";
+            foreach ($comments_arr as $c) {
+                $c_author = isset($c['first_name']) && $c['first_name'] !== '' ? $c['first_name'] : (isset($c['user_email']) ? $c['user_email'] : 'Unknown');
+                $c_date = isset($c['created_at']) ? $c['created_at'] : '';
+                $c_content = isset($c['content']) ? $c['content'] : '';
+                $comments_text .= "  - " . $c_author . ($c_date ? " (" . $c_date . ")" : "") . ": " . $c_content . "\n";
+            }
+        }
+    }
+
+    // Resolve image URLs
+    $images_text = '';
+    if ($note_row && !empty($note_row->images)) {
+        $dec = sticky_comment_decrypt($note_row->images);
+        $image_ids = json_decode($dec, true);
+        if (is_array($image_ids) && count($image_ids) > 0) {
+            $images_text .= "\nImages (" . count($image_ids) . "):\n";
+            foreach ($image_ids as $img_id) {
+                $img_id = intval($img_id);
+                if ($img_id > 0) {
+                    $url = wp_get_attachment_url($img_id);
+                    if ($url) {
+                        $images_text .= "  - " . $url . "\n";
+                    }
+                }
+            }
+        }
+    }
+
+    $action_label = ($type === 'new') ? __('New Sticky Note Created', 'sticky-comment') : __('Sticky Note Updated', 'sticky-comment');
+
+    $subject = $action_label . ' (#' . $note_id . ')';
+
+    $site_name = get_option('blogname', 'WordPress');
+    $site_url = home_url();
+
+    $body  = $action_label . "\n";
+    $body .= str_repeat('-', 40) . "\n\n";
+    $body .= "Website: " . $site_name . "\n";
+    $body .= "Domain: " . $site_url . "\n";
+    $body .= "Note ID: " . $note_id . "\n";
+    if (!empty($title)) {
+        $body .= "Title: " . $title . "\n";
+    }
+    $body .= "Author: " . $author . (!empty($author_email) ? " (" . $author_email . ")" : "") . "\n";
+    $body .= "Priority: " . $priority_label . "\n";
+    if (!empty($assigned_to)) {
+        $body .= "Assigned To: " . $assigned_to . "\n";
+    }
+    $body .= "Device: " . (!empty($device) ? ucfirst($device) : 'Unknown') . "\n";
+    if (!empty($page_url)) {
+        $body .= "Link: " . $page_url . "#sticky-note-" . $note_id . "\n";
+    }
+    $body .= "\nContent:\n" . $content . "\n";
+    $body .= $comments_text;
+    $body .= $images_text;
+
+    // Capture PHPMailer errors via wp_mail_failed hook
+    $mail_error = null;
+    $capture_error = function($wp_error) use (&$mail_error) {
+        $mail_error = $wp_error;
+    };
+    add_action('wp_mail_failed', $capture_error);
+
+    $admin_email = get_option('admin_email', '');
+    $site_name = get_option('blogname', 'Sticky Notes');
+    $headers = array();
+    if (!empty($admin_email) && is_email($admin_email)) {
+        $headers[] = 'From: ' . $site_name . ' <' . $admin_email . '>';
+    }
+
+    $sent = wp_mail($notification_email, $subject, $body, $headers);
+
+    remove_action('wp_mail_failed', $capture_error);
+
+    if ($sent) {
+        error_log('[Sticky Notes] Email sent to ' . $notification_email . ' for note #' . $note_id . ' (' . $type . ')');
+        return array('status' => 'sent');
+    } else {
+        $error_msg = 'Unknown error';
+        $user_msg = 'Email could not be sent. Please check your server mail configuration.';
+        if ($mail_error && is_wp_error($mail_error)) {
+            $error_msg = $mail_error->get_error_message();
+            $error_data = $mail_error->get_error_data();
+            if (!empty($error_data)) {
+                $error_msg .= ' | Data: ' . (is_string($error_data) ? $error_data : wp_json_encode($error_data));
+            }
+            // User-friendly message based on common errors
+            $raw = $mail_error->get_error_message();
+            if (stripos($raw, 'Could not instantiate mail function') !== false) {
+                $user_msg = 'Mail server is not configured. Contact your hosting provider or install an SMTP plugin.';
+            } elseif (stripos($raw, 'Invalid address') !== false) {
+                $user_msg = 'Invalid email address in settings. Please check the From or Notification email.';
+            } elseif (stripos($raw, 'SMTP connect() failed') !== false || stripos($raw, 'Connection refused') !== false) {
+                $user_msg = 'Could not connect to the mail server. Check your SMTP settings.';
+            }
+        }
+        error_log('[Sticky Notes] Email FAILED to ' . $notification_email . ' for note #' . $note_id . ' (' . $type . ') — Error: ' . $error_msg);
+        return array('status' => 'failed', 'reason' => $user_msg);
+    }
+}
+
 // AJAX handler for storing sticky comment
 function sticky_comment_save() {
     // Check throttling first (before other checks to save resources)
@@ -170,7 +319,17 @@ function sticky_comment_save() {
         }
         $updated = $wpdb->update($table_name, $data, $where);
         if ($updated !== false) {
-            wp_send_json_success('Sticky note updated');
+            $email_result = array('status' => 'skipped');
+            $should_notify = isset($_POST['notify']) && $_POST['notify'] === '1';
+            if ($should_notify) {
+                $email_type = (isset($_POST['is_new']) && $_POST['is_new'] === '1') ? 'new' : 'update';
+                $email_result = sticky_comment_send_notification($email_type, $note_id, $content, $post_id, $user_id, $guest_ctx, $assigned_to, $priority, $title, $device);
+            }
+            $response = array('message' => 'Sticky note updated', 'email_sent' => $email_result['status']);
+            if (!empty($email_result['reason'])) {
+                $response['email_error'] = $email_result['reason'];
+            }
+            wp_send_json_success($response);
         } else {
             wp_send_json_error('Database update failed');
         }
@@ -199,7 +358,17 @@ function sticky_comment_save() {
         }
         $inserted = $wpdb->insert($table_name, $insert_data);
         if ($inserted) {
-            wp_send_json_success(array('message' => 'Sticky note saved', 'note_id' => $wpdb->insert_id));
+            $new_note_id = $wpdb->insert_id;
+            $email_result = array('status' => 'skipped');
+            $should_notify = isset($_POST['notify']) && $_POST['notify'] === '1';
+            if ($should_notify) {
+                $email_result = sticky_comment_send_notification('new', $new_note_id, $content, $post_id, $user_id, $guest_ctx, $assigned_to, $priority, $title, $device);
+            }
+            $response = array('message' => 'Sticky note saved', 'note_id' => $new_note_id, 'email_sent' => $email_result['status']);
+            if (!empty($email_result['reason'])) {
+                $response['email_error'] = $email_result['reason'];
+            }
+            wp_send_json_success($response);
         } else {
             wp_send_json_error('Database insert failed');
         }

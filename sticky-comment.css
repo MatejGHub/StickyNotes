@@ -198,7 +198,7 @@ html {
     /* No border-radius by default */
     height: 21px;
     background-color: #ffffff;
-    margin-top: -2px;
+    margin-top: -2px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;

@@ -1149,7 +1149,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
     const loader = window.stickyFeedback?.showLoadingIndicator(saveButton);
 
     function finalizeSave() {
-      return saveNoteState().finally(() => {
+      return saveNoteState(true).finally(() => {
         saveButton.classList.add("sticky-save-hidden");
         saveButton.classList.remove("sticky-save-visible");
         if (loader) window.stickyFeedback?.hideLoadingIndicator(loader);
@@ -1358,7 +1358,9 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
     openStickyImagesModal();
   });
 
-  function saveNoteState() {
+  let notifiedOnce = false;
+
+  function saveNoteState(notify) {
     const left = parseFloat(wrapper.style.left);
     const top = parseFloat(wrapper.style.top);
 
@@ -1401,6 +1403,11 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
         (wrapper && wrapper.dataset && wrapper.dataset.device) ||
         getStickyDeviceType(),
     };
+    if (notify) {
+      saveParams.notify = "1";
+      saveParams.is_new = notifiedOnce ? "0" : "1";
+      notifiedOnce = true;
+    }
     if (my_ajax_object.is_guest === 1 && my_ajax_object.guest_token && my_ajax_object.guest_id) {
       saveParams.guest_token = my_ajax_object.guest_token;
       saveParams.guest_id = my_ajax_object.guest_id;
@@ -1412,14 +1419,34 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.data?.note_id) {
-          wrapper.dataset.noteId = data.data.note_id;
+        if (data.success) {
+          if (data.data?.note_id) {
+            wrapper.dataset.noteId = data.data.note_id;
+          }
           if (window.stickyFeedback) {
             window.stickyFeedback.showNotification(
               "Note saved successfully!",
               "success",
               2000
             );
+          }
+          if (data.data?.email_sent === "sent" && window.stickyFeedback) {
+            setTimeout(() => {
+              window.stickyFeedback.showNotification(
+                "Email notification sent",
+                "success",
+                3000
+              );
+            }, 500);
+          } else if (data.data?.email_sent === "failed" && window.stickyFeedback) {
+            const reason = data.data?.email_error || "Email notification failed to send";
+            setTimeout(() => {
+              window.stickyFeedback.showNotification(
+                reason,
+                "error",
+                6000
+              );
+            }, 500);
           }
         } else if (data.error || data.data?.message) {
           if (window.stickyFeedback) {

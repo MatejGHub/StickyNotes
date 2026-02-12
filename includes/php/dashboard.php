@@ -1083,6 +1083,8 @@ function render_sticky_notes_settings() {
         update_option('sticky_comment_palette', sanitize_text_field($_POST['sticky_palette'] ?? 'purple'));
         // Save throttling settings
         update_option('sticky_comment_throttle_limit', intval($_POST['throttle_limit'] ?? 20));
+        // Save notification email
+        update_option('sticky_comment_notification_email', sanitize_email($_POST['notification_email'] ?? ''));
         echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
     }
 
@@ -1092,6 +1094,7 @@ function render_sticky_notes_settings() {
     $settings_admin_user = intval(get_option('sticky_comment_settings_admin_user', 0));
     $selected_palette = get_option('sticky_comment_palette', 'purple');
     $throttle_limit = get_option('sticky_comment_throttle_limit', 20);
+    $notification_email = get_option('sticky_comment_notification_email', '');
 
     // Prepare administrators list for dropdown
     $admins = get_users(array(
@@ -1170,6 +1173,16 @@ function render_sticky_notes_settings() {
                 <div class="form-field">
                     <input type="number" id="throttle_limit" name="throttle_limit" value="<?php echo esc_attr($throttle_limit); ?>" min="5" max="100" />
                     <p class="description">Maximum number of requests per user per minute (5-100).</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-label">
+                    <label for="notification_email">Notification Email</label>
+                </div>
+                <div class="form-field">
+                    <input type="email" id="notification_email" name="notification_email" value="<?php echo esc_attr($notification_email); ?>" placeholder="email@example.com" style="max-width:300px;" />
+                    <p class="description">Email address to receive notifications when a sticky note is saved.</p>
                 </div>
             </div>
 
