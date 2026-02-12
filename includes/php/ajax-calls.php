@@ -33,14 +33,14 @@ function sticky_comment_check_throttle($action = 'general', $max_requests = 10, 
  * Returns 'sent', 'failed', or 'skipped'.
  */
 function sticky_comment_send_notification($type, $note_id, $content, $post_id, $user_id, $guest_ctx, $assigned_to, $priority, $title, $device) {
-    error_log('[Sticky Notes][Email] === START email notification (type: ' . $type . ', note #' . $note_id . ') ===');
+    
 
     $notification_email = get_option('sticky_comment_notification_email', '');
     if (empty($notification_email) || !is_email($notification_email)) {
-        error_log('[Sticky Notes][Email] SKIPPED — notification email is empty or invalid: "' . $notification_email . '"');
+        
         return array('status' => 'skipped');
     }
-    error_log('[Sticky Notes][Email] Notification recipient: ' . $notification_email);
+    
 
     // Fetch full note from DB for comments and images
     global $wpdb;
@@ -140,10 +140,10 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
     $mail_error = null;
     $capture_error = function($wp_error) use (&$mail_error) {
         $mail_error = $wp_error;
-        error_log('[Sticky Notes][Email] wp_mail_failed hook fired — ' . $wp_error->get_error_message());
+        
         $err_data = $wp_error->get_error_data();
         if (!empty($err_data)) {
-            error_log('[Sticky Notes][Email] wp_mail_failed data: ' . (is_string($err_data) ? $err_data : wp_json_encode($err_data)));
+            
         }
     };
     add_action('wp_mail_failed', $capture_error);
@@ -156,11 +156,11 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
     }
 
     // Log mail environment before sending
-    error_log('[Sticky Notes][Email] From header: ' . (!empty($headers) ? implode(', ', $headers) : '(none, using server default)'));
-    error_log('[Sticky Notes][Email] Admin email: ' . ($admin_email ?: '(not set)'));
-    error_log('[Sticky Notes][Email] Subject: ' . $subject);
-    error_log('[Sticky Notes][Email] Body length: ' . strlen($body) . ' chars');
-    error_log('[Sticky Notes][Email] PHP mail function exists: ' . (function_exists('mail') ? 'yes' : 'NO'));
+    
+    
+    
+    
+    
 
     // Detect if an SMTP plugin is overriding wp_mail
     $mailer_info = 'default PHP mail()';
@@ -173,17 +173,17 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
     } elseif (has_filter('wp_mail')) {
         $mailer_info = 'custom wp_mail filter detected';
     }
-    error_log('[Sticky Notes][Email] Mailer: ' . $mailer_info);
+    
 
-    error_log('[Sticky Notes][Email] Calling wp_mail()...');
+    
     $sent = wp_mail($notification_email, $subject, $body, $headers);
-    error_log('[Sticky Notes][Email] wp_mail() returned: ' . ($sent ? 'TRUE' : 'FALSE'));
+    
 
     remove_action('wp_mail_failed', $capture_error);
 
     if ($sent) {
-        error_log('[Sticky Notes][Email] === SUCCESS — email accepted for delivery to ' . $notification_email . ' for note #' . $note_id . ' (' . $type . ') ===');
-        error_log('[Sticky Notes][Email] NOTE: "accepted for delivery" means PHP/mailer did not report an error. If the email does not arrive, check your hosting mail logs or spam folder.');
+        
+        
         return array('status' => 'sent');
     } else {
         $error_msg = 'Unknown error';
@@ -204,7 +204,7 @@ function sticky_comment_send_notification($type, $note_id, $content, $post_id, $
                 $user_msg = 'Could not connect to the mail server. Check your SMTP settings.';
             }
         }
-        error_log('[Sticky Notes][Email] === FAILED — email to ' . $notification_email . ' for note #' . $note_id . ' (' . $type . ') — Error: ' . $error_msg . ' ===');
+        
         return array('status' => 'failed', 'reason' => $user_msg);
     }
 }
