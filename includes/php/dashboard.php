@@ -179,7 +179,7 @@ function sticky_comments_page() {
     // Check if a new palette was just submitted via POST (for immediate theme update after save)
     $palette = isset($_POST['sticky_palette']) && wp_verify_nonce($_POST['settings_nonce'] ?? '', 'sticky_settings_action')
         ? sanitize_text_field($_POST['sticky_palette'])
-        : get_option('sticky_comment_palette', 'purple');
+        : get_option('sticky_comment_palette', 'midnight');
 
     // Get active tab from URL parameter or default to 'data'
     $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'data';
@@ -226,7 +226,7 @@ function sticky_comments_page() {
         )
     );
 
-    $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['purple'];
+    $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['midnight'];
     ?>
     <style>
     :root {
@@ -931,7 +931,7 @@ add_action('admin_footer', function() {
 
         // Function to apply theme
         function applyTheme(palette) {
-          const theme = themes[palette] || themes['purple'];
+          const theme = themes[palette] || themes['midnight'];
           const root = document.documentElement;
 
           root.style.setProperty('--sticky-primary', theme.primary);
@@ -1080,7 +1080,7 @@ function render_sticky_notes_settings() {
         update_option('sticky_comment_settings_min_cap', sanitize_text_field($_POST['settings_min_cap'] ?? 'manage_options'));
         update_option('sticky_comment_settings_admin_user', intval($_POST['settings_admin_user'] ?? 0));
         // Save selected color palette
-        update_option('sticky_comment_palette', sanitize_text_field($_POST['sticky_palette'] ?? 'purple'));
+        update_option('sticky_comment_palette', sanitize_text_field($_POST['sticky_palette'] ?? 'midnight'));
         // Save throttling settings
         update_option('sticky_comment_throttle_limit', intval($_POST['throttle_limit'] ?? 20));
         // Save notification email
@@ -1092,7 +1092,7 @@ function render_sticky_notes_settings() {
     $max_notes = get_option('sticky_comment_max_notes', 10);
     $settings_min_cap = get_option('sticky_comment_settings_min_cap', 'manage_options');
     $settings_admin_user = intval(get_option('sticky_comment_settings_admin_user', 0));
-    $selected_palette = get_option('sticky_comment_palette', 'purple');
+    $selected_palette = get_option('sticky_comment_palette', 'midnight');
     $throttle_limit = get_option('sticky_comment_throttle_limit', 20);
     $notification_email = get_option('sticky_comment_notification_email', '');
 
@@ -1135,7 +1135,7 @@ function render_sticky_notes_settings() {
 
                         <div class="palette-dropdown-menu" id="palette-menu" style="position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: 2px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); z-index: 1000; display: none; padding: 16px;">
                             <div class="palette-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                                <div class="palette-option <?php echo $selected_palette === 'purple' ? 'selected' : ''; ?>" data-palette="purple" data-name="Purple" data-desc="Default" data-gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" style="cursor: pointer; padding: 12px; border-radius: 6px; border: 2px solid <?php echo $selected_palette === 'purple' ? '#8b5cf6' : '#e2e8f0'; ?>; text-align: center; transition: all 0.2s ease; background: #ffffff;">
+                                <div class="palette-option <?php echo $selected_palette === 'purple' ? 'selected' : ''; ?>" data-palette="purple" data-name="Purple" data-desc="Classic" data-gradient="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" style="cursor: pointer; padding: 12px; border-radius: 6px; border: 2px solid <?php echo $selected_palette === 'purple' ? '#8b5cf6' : '#e2e8f0'; ?>; text-align: center; transition: all 0.2s ease; background: #ffffff;">
                                     <div class="palette-preview" style="width: 100%; height: 40px; border-radius: 4px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); margin-bottom: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
                                     <div class="palette-name" style="font-size: 12px; font-weight: 600; color: #374151;">Purple</div>
                                 </div>
@@ -1150,7 +1150,7 @@ function render_sticky_notes_settings() {
                                     <div class="palette-name" style="font-size: 12px; font-weight: 600; color: #374151;">Aurora</div>
                                 </div>
 
-                                <div class="palette-option <?php echo $selected_palette === 'midnight' ? 'selected' : ''; ?>" data-palette="midnight" data-name="Midnight" data-desc="Dark" data-gradient="linear-gradient(135deg, #1e293b 0%, #334155 100%)" style="cursor: pointer; padding: 12px; border-radius: 6px; border: 2px solid <?php echo $selected_palette === 'midnight' ? '#1e293b' : '#e2e8f0'; ?>; text-align: center; transition: all 0.2s ease; background: #ffffff;">
+                                <div class="palette-option <?php echo $selected_palette === 'midnight' ? 'selected' : ''; ?>" data-palette="midnight" data-name="Midnight" data-desc="Default" data-gradient="linear-gradient(135deg, #1e293b 0%, #334155 100%)" style="cursor: pointer; padding: 12px; border-radius: 6px; border: 2px solid <?php echo $selected_palette === 'midnight' ? '#1e293b' : '#e2e8f0'; ?>; text-align: center; transition: all 0.2s ease; background: #ffffff;">
                                     <div class="palette-preview" style="width: 100%; height: 40px; border-radius: 4px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); margin-bottom: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
                                     <div class="palette-name" style="font-size: 12px; font-weight: 600; color: #374151;">Midnight</div>
                                 </div>

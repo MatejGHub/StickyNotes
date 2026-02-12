@@ -348,7 +348,7 @@ function sticky_comment_enqueue_scripts() {
     $plugin_url = plugin_dir_url(dirname(dirname(__DIR__)) . '/sticky-comment.php');
     $plugin_dir = plugin_dir_path(dirname(dirname(__DIR__)) . '/sticky-comment.php');
 
-    $palette = get_option('sticky_comment_palette', 'purple');
+    $palette = get_option('sticky_comment_palette', 'midnight');
         $themes = array(
             'purple' => array(
                 'primary' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -386,7 +386,7 @@ function sticky_comment_enqueue_scripts() {
                 'primary_dark' => '#7c3aed'
             )
         );
-        $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['purple'];
+        $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['midnight'];
 
         $inject_version = filemtime($plugin_dir . 'includes/js/inject-sticky-comment.js');
         $fetch_version = filemtime($plugin_dir . 'includes/js/fetch-sticky-comment.js');
@@ -516,7 +516,7 @@ function sticky_comment_enqueue_scripts() {
 
         wp_add_inline_style('sticky-comment-style', $theme_css);
 
-        $palette = get_option('sticky_comment_palette', 'purple');
+        $palette = get_option('sticky_comment_palette', 'midnight');
         $themes = array(
             'purple' => array(
                 'header' => 'linear-gradient(135deg,#8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)',
@@ -583,7 +583,7 @@ function sticky_comment_enqueue_scripts() {
             )
         );
 
-        $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['purple'];
+        $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['midnight'];
         $header_gradient = $theme['header'];
         $header_hover_gradient = $theme['header_hover'];
         $bubble_gradient = $theme['bubble'];
@@ -726,7 +726,7 @@ function sticky_notes_admin_scripts($hook) {
         $css_version
     );
 
-    $palette = get_option('sticky_comment_palette', 'purple');
+    $palette = get_option('sticky_comment_palette', 'midnight');
     $themes = array(
         'purple' => array(
             'header' => 'linear-gradient(135deg,#8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)',
@@ -793,7 +793,7 @@ function sticky_notes_admin_scripts($hook) {
         )
     );
 
-    $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['purple'];
+    $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['midnight'];
     $header_gradient = $theme['header'];
     $header_hover_gradient = $theme['header_hover'];
 
