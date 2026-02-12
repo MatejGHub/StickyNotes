@@ -1853,6 +1853,7 @@ html {
     min-height: calc(100vh - 32px);
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    padding-bottom: 5px !important ;
 }
 #sticky-comments-admin > h1{
   margin-bottom: 0px !important;
@@ -2368,4 +2369,8 @@ html {
 .sticky-note-wrapper.sticky-hidden{
   display: none !important;
   visibility: hidden !important;
+}
+
+#tab-content-sticky-notes {
+  margin: 10px !important;
 }
