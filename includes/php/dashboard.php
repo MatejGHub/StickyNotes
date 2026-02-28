@@ -568,7 +568,7 @@ function render_sticky_notes_table() {
 
                         // Add count indicator for multiple images
                         if ($total_count > 1) {
-                            echo '<div style="position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;border-radius:10px;background:#6366f1;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:white;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+                            echo '<div style="position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;border-radius:10px;background:#0f172a;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:white;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
                             echo '<span>' . $total_count . '</span>';
                             echo '</div>';
                         }

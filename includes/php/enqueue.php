@@ -326,10 +326,13 @@ function sticky_comment_enqueue_scripts() {
     $is_view_only = false;
     $view_note_id = 0;
 
-    // Check for view-only mode via ?sv=NOTE_ID (public read-only access to a single note)
+    // Check for shared note via ?sv=NOTE_ID.
+    // Keep view-only for non-logged-in visitors; logged-in users retain full controls.
     if (isset($_GET['sv']) && absint($_GET['sv']) > 0) {
-        $is_view_only = true;
         $view_note_id = absint($_GET['sv']);
+        if (!is_user_logged_in()) {
+            $is_view_only = true;
+        }
     }
 
     if (is_user_logged_in()) {
