@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
-  // If URL contains a sticky note hash, extract its numeric ID so the backend includes it even if completed
+  // Determine target note id from hash or ?sv= so links can both open in incognito and auto-scroll
   let includeId = 0;
   if (
     window.location.hash &&
@@ -20,6 +20,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const idStr = window.location.hash.replace("#sticky-note-", "");
     const maybe = parseInt(idStr, 10);
     if (!isNaN(maybe)) includeId = maybe;
+  }
+  if (!includeId) {
+    const svParam = new URLSearchParams(window.location.search).get("sv");
+    const maybeSv = svParam ? parseInt(svParam, 10) : NaN;
+    if (!isNaN(maybeSv) && maybeSv > 0) includeId = maybeSv;
   }
 
   const fetchParams = {
@@ -37,7 +42,11 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchParams.view_note_id = String(viewNoteId);
   }
 
-  if (my_ajax_object.is_guest === 1 && my_ajax_object.guest_token && my_ajax_object.guest_id) {
+  if (
+    my_ajax_object.is_guest === 1 &&
+    my_ajax_object.guest_token &&
+    my_ajax_object.guest_id
+  ) {
     fetchParams.guest_token = my_ajax_object.guest_token;
     fetchParams.guest_id = my_ajax_object.guest_id;
   }
@@ -82,7 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
           try {
             // update counter UI if present (don't dispatch input event to avoid showing save button on load)
             const counterWrap = wrapper.querySelector(
-              ".sticky-char-counter-wrap"
+              ".sticky-char-counter-wrap",
             );
             if (counterWrap) {
               const counterCount =
@@ -160,7 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
 
           const assigneeSelect = wrapper.querySelector(
-            ".sticky-assignee-select"
+            ".sticky-assignee-select",
           );
           if (assigneeSelect) {
             assigneeSelect.value = note.assigned_to || "";
@@ -188,10 +197,15 @@ document.addEventListener("DOMContentLoaded", function () {
             window.location.hash.startsWith("#sticky-note-")
           ) {
             scrollTarget = document.querySelector(window.location.hash);
+          } else if (includeId > 0) {
+            scrollTarget = document.getElementById("sticky-note-" + includeId);
           }
 
           if (scrollTarget) {
-            scrollTarget.scrollIntoView({ behavior: "smooth", block: "center" });
+            scrollTarget.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
             scrollTarget.classList.add("sticky-pulse-animation");
             setTimeout(() => {
               scrollTarget.classList.remove("sticky-pulse-animation");
