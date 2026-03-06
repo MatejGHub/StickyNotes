@@ -10,7 +10,7 @@ const StickyUtils = {
   // Count active (non-completed) notes
   countActiveNotes() {
     return Array.from(document.querySelectorAll(".sticky-note")).filter(
-      (n) => n.dataset.completed !== "1"
+      (n) => n.dataset.completed !== "1",
     ).length;
   },
 
@@ -27,7 +27,7 @@ const StickyUtils = {
   setCursorState(state) {
     document.body.classList.remove(
       "sticky-cursor-crosshair",
-      "sticky-cursor-default"
+      "sticky-cursor-default",
     );
     if (state === "crosshair") {
       document.body.classList.add("sticky-cursor-crosshair");
@@ -41,6 +41,18 @@ const StickyUtils = {
     return this.countActiveNotes() >= this.getMaxNotes();
   },
 };
+
+function getStickyNotesContainer() {
+  let container = document.querySelector(".sticky-notes-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "sticky-notes-container";
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+window.getStickyNotesContainer = getStickyNotesContainer;
 
 // Floating Bubble Interface for Sticky Notes
 document.addEventListener("DOMContentLoaded", function () {
@@ -63,6 +75,8 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function createFloatingBubble() {
+  const stickyContainer = getStickyNotesContainer();
+
   // Create bubble
   const bubble = document.createElement("div");
   bubble.className = "sticky-bubble";
@@ -92,8 +106,8 @@ function createFloatingBubble() {
   `;
 
   // Add to DOM
-  document.body.appendChild(bubble);
-  document.body.appendChild(menu);
+  stickyContainer.appendChild(bubble);
+  stickyContainer.appendChild(menu);
 
   // Update note count on bubble
   updateBubbleCount();
@@ -174,7 +188,7 @@ function handleAddNote() {
     StickyUtils.showNotification(
       "You reached the limit of sticky notes.",
       "warning",
-      2500
+      2500,
     );
     shortcutActive = false;
     return;
@@ -187,13 +201,13 @@ function handleAddNote() {
   StickyUtils.showNotification(
     "✨ Click anywhere to place your note",
     "info",
-    4000
+    4000,
   );
 
   // Add overlay to help with placement (captures clicks so page below won't react)
   const overlay = document.createElement("div");
   overlay.className = "sticky-placement-overlay";
-  document.body.appendChild(overlay);
+  getStickyNotesContainer().appendChild(overlay);
 
   // One-time click handler for placement
   const placeNote = (event) => {
@@ -201,7 +215,7 @@ function handleAddNote() {
       StickyUtils.showNotification(
         "You reached the limit of sticky notes.",
         "warning",
-        2500
+        2500,
       );
       StickyUtils.setCursorState("default");
       overlay.removeEventListener("click", placeNote);
@@ -287,7 +301,11 @@ function handleAddNote() {
             assigneeInput && assigneeInput.value ? assigneeInput.value : "",
           device: (wrapper && wrapper.dataset && wrapper.dataset.device) || "",
         };
-        if (my_ajax_object.is_guest === 1 && my_ajax_object.guest_token && my_ajax_object.guest_id) {
+        if (
+          my_ajax_object.is_guest === 1 &&
+          my_ajax_object.guest_token &&
+          my_ajax_object.guest_id
+        ) {
           p.guest_token = my_ajax_object.guest_token;
           p.guest_id = my_ajax_object.guest_id;
         }
@@ -301,7 +319,7 @@ function handleAddNote() {
           StickyUtils.showNotification(
             "Note created successfully!",
             "success",
-            2000
+            2000,
           );
           // Update bubble count
           if (window.updateBubbleCount) {
@@ -310,7 +328,7 @@ function handleAddNote() {
         } else {
           StickyUtils.showNotification(
             data.error || data.data?.message || "Failed to create note",
-            "error"
+            "error",
           );
         }
       })
@@ -425,7 +443,7 @@ function handleToggleCompleted() {
     window.stickyFeedback.showNotification(
       showCompleted ? "Showing completed notes" : "Hiding completed notes",
       "info",
-      1500
+      1500,
     );
   }
 
@@ -455,7 +473,11 @@ function handleToggleCompleted() {
             page_url: pageUrl,
             include_completed: "1",
           };
-          if (my_ajax_object.is_guest === 1 && my_ajax_object.guest_token && my_ajax_object.guest_id) {
+          if (
+            my_ajax_object.is_guest === 1 &&
+            my_ajax_object.guest_token &&
+            my_ajax_object.guest_id
+          ) {
             p.guest_token = my_ajax_object.guest_token;
             p.guest_id = my_ajax_object.guest_id;
           }
@@ -469,7 +491,7 @@ function handleToggleCompleted() {
           const existingIds = new Set(
             Array.from(document.querySelectorAll(".sticky-note"))
               .map((n) => Number(n.dataset.noteId))
-              .filter(Boolean)
+              .filter(Boolean),
           );
           data.data.forEach((note) => {
             const isCompleted =
@@ -489,7 +511,7 @@ function handleToggleCompleted() {
             // Update counter UI manually without dispatching input event
             try {
               const counterWrap = wrapper.querySelector(
-                ".sticky-char-counter-wrap"
+                ".sticky-char-counter-wrap",
               );
               if (counterWrap) {
                 const counterCount =
@@ -611,8 +633,8 @@ function renderNotesList(modal, deviceFilter = null) {
             priority === 1
               ? "priority-dot-low"
               : priority === 3
-              ? "priority-dot-high"
-              : "priority-dot-medium"
+                ? "priority-dot-high"
+                : "priority-dot-medium"
           }\"></span></span>
           <span class="sticky-list-title">${esc(titleDisplay)}</span>
           <span class="sticky-list-excerpt">${esc(toExcerpt(content))}</span>
@@ -636,8 +658,8 @@ function renderNotesList(modal, deviceFilter = null) {
               .map(
                 (img) =>
                   `<img class=\"sticky-list-thumb\" src=\"${esc(
-                    img.src
-                  )}\" alt=\"\" />`
+                    img.src,
+                  )}\" alt=\"\" />`,
               )
               .join("") || ""
           }</div>
@@ -687,7 +709,7 @@ function showNotesModal() {
         </div>
       </div>
     `;
-    document.body.appendChild(modal);
+    getStickyNotesContainer().appendChild(modal);
 
     // Auto-switch tabs on window resize
     const handleResize = () => {
@@ -699,7 +721,7 @@ function showNotesModal() {
         tabButtons.forEach((btn) => btn.classList.remove("active"));
         // Add active class to new device tab
         const newActiveTab = modal.querySelector(
-          `.sticky-tab-button[data-device="${newDeviceType}"]`
+          `.sticky-tab-button[data-device="${newDeviceType}"]`,
         );
         if (newActiveTab) {
           newActiveTab.classList.add("active");
@@ -725,7 +747,7 @@ function showNotesModal() {
 
     // Set initial active tab based on current device
     const initialActiveTab = modal.querySelector(
-      `.sticky-tab-button[data-device="${currentDeviceFilter}"]`
+      `.sticky-tab-button[data-device="${currentDeviceFilter}"]`,
     );
     if (initialActiveTab) {
       initialActiveTab.classList.add("active");
@@ -777,7 +799,7 @@ function showNotesModal() {
           if (!expandedBefore) {
             // Collapse any other open rows to ensure only one is expanded
             const openRows = notesList.querySelectorAll(
-              ".sticky-list-row.open"
+              ".sticky-list-row.open",
             );
             openRows.forEach((r) => {
               if (r !== row) {
@@ -792,7 +814,7 @@ function showNotesModal() {
             });
             const noteId = row.getAttribute("data-note-id");
             const targetNote = document.querySelector(
-              `.sticky-note[data-note-id="${noteId}"]`
+              `.sticky-note[data-note-id="${noteId}"]`,
             );
             if (targetNote) {
               const ta = targetNote.querySelector(".sticky-text");
@@ -827,8 +849,8 @@ function showNotesModal() {
                   priority === 1
                     ? "priority-dot-low"
                     : priority === 3
-                    ? "priority-dot-high"
-                    : "priority-dot-medium"
+                      ? "priority-dot-high"
+                      : "priority-dot-medium"
                 }\"></span>`;
               }
             }
@@ -846,7 +868,7 @@ function showNotesModal() {
         if (action === "focus") {
           // Find and focus the note
           const targetNote = document.querySelector(
-            `.sticky-note[data-note-id="${noteId}"]`
+            `.sticky-note[data-note-id="${noteId}"]`,
           );
           if (targetNote) {
             try {
@@ -862,7 +884,7 @@ function showNotesModal() {
         } else if (action === "delete") {
           // Delete the note
           const targetNote = document.querySelector(
-            `[data-note-id="${noteId}"]`
+            `[data-note-id="${noteId}"]`,
           );
           if (
             targetNote &&
@@ -886,7 +908,7 @@ function updateBubbleCount() {
 
   // Count only visible notes
   const visibleNotes = Array.from(
-    document.querySelectorAll(".sticky-note")
+    document.querySelectorAll(".sticky-note"),
   ).filter((note) => !note.classList.contains("sticky-hidden"));
   const noteCount = visibleNotes.length;
 

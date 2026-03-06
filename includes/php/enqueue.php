@@ -8,7 +8,8 @@ if (!defined('STICKY_COMMENT_DB_VERSION')) {
  * Encrypt plaintext for safe storage.
  * Uses AES-256-CBC with a key derived from WordPress auth salts.
  */
-function sticky_comment_encrypt($plaintext) {
+function sticky_comment_encrypt($plaintext)
+{
     if ($plaintext === '' || $plaintext === null) {
         return '';
     }
@@ -31,7 +32,8 @@ function sticky_comment_encrypt($plaintext) {
 /**
  * Decrypt ciphertext stored by sticky_comment_encrypt.
  */
-function sticky_comment_decrypt($ciphertext) {
+function sticky_comment_decrypt($ciphertext)
+{
     if ($ciphertext === '' || $ciphertext === null) {
         return '';
     }
@@ -53,7 +55,8 @@ function sticky_comment_decrypt($ciphertext) {
     return ($plain === false) ? $ciphertext : $plain;
 }
 
-function sticky_comment_create_table() {
+function sticky_comment_create_table()
+{
     global $wpdb;
     $table_name = $wpdb->prefix . 'sticky_notes';
 
@@ -89,15 +92,16 @@ function sticky_comment_create_table() {
     update_option('sticky_comment_db_version', STICKY_COMMENT_DB_VERSION);
 }
 
-function sticky_comment_ensure_table_exists() {
+function sticky_comment_ensure_table_exists()
+{
     global $wpdb;
     $table_name = $wpdb->prefix . 'sticky_notes';
     $table_name_esc = esc_sql($table_name);
-    
+
     $table_exists = $wpdb->get_var(
         $wpdb->prepare('SHOW TABLES LIKE %s', $table_name)
     ) == $table_name;
-    
+
     if (!$table_exists) {
         sticky_comment_create_table();
         $table_exists = $wpdb->get_var(
@@ -197,7 +201,8 @@ function sticky_comment_ensure_table_exists() {
     return true;
 }
 
-function sticky_comment_ensure_shared_links_table_exists() {
+function sticky_comment_ensure_shared_links_table_exists()
+{
     global $wpdb;
     $table_name = $wpdb->prefix . 'sticky_shared_links';
     $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name)) === $table_name;
@@ -224,7 +229,8 @@ function sticky_comment_ensure_shared_links_table_exists() {
  * Return guest context if the request has a valid shared-link token (from GET or cookie).
  * Returns array with token, guest_id, link_id, expires_at or null.
  */
-function sticky_comment_get_guest_context() {
+function sticky_comment_get_guest_context()
+{
     if (is_user_logged_in()) {
         return null;
     }
@@ -278,7 +284,8 @@ function sticky_comment_get_guest_context() {
 /**
  * Guest context from current request (cookie or POST). For use in AJAX handlers.
  */
-function sticky_comment_get_guest_context_from_request() {
+function sticky_comment_get_guest_context_from_request()
+{
     $ctx = sticky_comment_get_guest_context();
     if ($ctx !== null && $ctx['guest_id'] !== '') {
         return $ctx;
@@ -317,7 +324,8 @@ function sticky_comment_get_guest_context_from_request() {
 $main_plugin_file = dirname(dirname(__DIR__)) . '/sticky-comment.php';
 register_activation_hook($main_plugin_file, 'sticky_comment_create_table');
 
-function sticky_comment_enqueue_scripts() {
+function sticky_comment_enqueue_scripts()
+{
     if (is_admin()) {
         return;
     }
@@ -352,91 +360,91 @@ function sticky_comment_enqueue_scripts() {
     $plugin_dir = plugin_dir_path(dirname(dirname(__DIR__)) . '/sticky-comment.php');
 
     $palette = get_option('sticky_comment_palette', 'midnight');
-        $themes = array(
-            'purple' => array(
-                'primary' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                'primary_hover' => 'linear-gradient(135deg, #764ba2 0%, #6d28d9 100%)',
-                'primary_shadow' => 'rgba(102, 126, 234, 0.3)',
-                'primary_focus' => 'rgba(102, 126, 234, 0.1)',
-                'primary_dark' => '#6d28d9'
-            ),
-            'sunset' => array(
-                'primary' => 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-                'primary_hover' => 'linear-gradient(135deg, #ea580c 0%, #dc2626 100%)',
-                'primary_shadow' => 'rgba(234, 88, 12, 0.3)',
-                'primary_focus' => 'rgba(234, 88, 12, 0.1)',
-                'primary_dark' => '#dc2626'
-            ),
-            'aurora' => array(
-                'primary' => 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
-                'primary_hover' => 'linear-gradient(135deg, #0891b2 0%, #2563eb 100%)',
-                'primary_shadow' => 'rgba(6, 182, 212, 0.3)',
-                'primary_focus' => 'rgba(6, 182, 212, 0.1)',
-                'primary_dark' => '#0891b2'
-            ),
-            'midnight' => array(
-                'primary' => 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                'primary_hover' => 'linear-gradient(135deg, #334155 0%, #475569 100%)',
-                'primary_shadow' => 'rgba(51, 65, 85, 0.3)',
-                'primary_focus' => 'rgba(51, 65, 85, 0.1)',
-                'primary_dark' => '#475569'
-            ),
-            'candy' => array(
-                'primary' => 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-                'primary_hover' => 'linear-gradient(135deg, #db2777 0%, #7c3aed 100%)',
-                'primary_shadow' => 'rgba(236, 72, 153, 0.3)',
-                'primary_focus' => 'rgba(236, 72, 153, 0.1)',
-                'primary_dark' => '#7c3aed'
-            )
-        );
-        $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['midnight'];
+    $themes = array(
+        'purple' => array(
+            'primary' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'primary_hover' => 'linear-gradient(135deg, #764ba2 0%, #6d28d9 100%)',
+            'primary_shadow' => 'rgba(102, 126, 234, 0.3)',
+            'primary_focus' => 'rgba(102, 126, 234, 0.1)',
+            'primary_dark' => '#6d28d9'
+        ),
+        'sunset' => array(
+            'primary' => 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+            'primary_hover' => 'linear-gradient(135deg, #ea580c 0%, #dc2626 100%)',
+            'primary_shadow' => 'rgba(234, 88, 12, 0.3)',
+            'primary_focus' => 'rgba(234, 88, 12, 0.1)',
+            'primary_dark' => '#dc2626'
+        ),
+        'aurora' => array(
+            'primary' => 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+            'primary_hover' => 'linear-gradient(135deg, #0891b2 0%, #2563eb 100%)',
+            'primary_shadow' => 'rgba(6, 182, 212, 0.3)',
+            'primary_focus' => 'rgba(6, 182, 212, 0.1)',
+            'primary_dark' => '#0891b2'
+        ),
+        'midnight' => array(
+            'primary' => 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+            'primary_hover' => 'linear-gradient(135deg, #334155 0%, #475569 100%)',
+            'primary_shadow' => 'rgba(51, 65, 85, 0.3)',
+            'primary_focus' => 'rgba(51, 65, 85, 0.1)',
+            'primary_dark' => '#475569'
+        ),
+        'candy' => array(
+            'primary' => 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+            'primary_hover' => 'linear-gradient(135deg, #db2777 0%, #7c3aed 100%)',
+            'primary_shadow' => 'rgba(236, 72, 153, 0.3)',
+            'primary_focus' => 'rgba(236, 72, 153, 0.1)',
+            'primary_dark' => '#7c3aed'
+        )
+    );
+    $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['midnight'];
 
-        $inject_version = filemtime($plugin_dir . 'includes/js/inject-sticky-comment.js');
-        $fetch_version = filemtime($plugin_dir . 'includes/js/fetch-sticky-comment.js');
-        $remove_version = filemtime($plugin_dir . 'includes/js/remove-sticky-comment.js');
-        $create_version = filemtime($plugin_dir . 'includes/js/create-sticky-comment.js');
-        $feedback_version = filemtime($plugin_dir . 'includes/js/user-feedback.js');
-        $css_version = filemtime($plugin_dir . 'sticky-comment.css');
+    $inject_version = filemtime($plugin_dir . 'includes/js/inject-sticky-comment.js');
+    $fetch_version = filemtime($plugin_dir . 'includes/js/fetch-sticky-comment.js');
+    $remove_version = filemtime($plugin_dir . 'includes/js/remove-sticky-comment.js');
+    $create_version = filemtime($plugin_dir . 'includes/js/create-sticky-comment.js');
+    $feedback_version = filemtime($plugin_dir . 'includes/js/user-feedback.js');
+    $css_version = filemtime($plugin_dir . 'sticky-comment.css');
 
-        wp_enqueue_script(
-            'sticky-comment-script',
-            $plugin_url . 'includes/js/inject-sticky-comment.js',
-            array('jquery'),
-            $inject_version,
-            true
-        );
+    wp_enqueue_script(
+        'sticky-comment-script',
+        $plugin_url . 'includes/js/inject-sticky-comment.js',
+        array('jquery'),
+        $inject_version,
+        true
+    );
 
-        wp_enqueue_script(
-            'fetch-sticky-comment-script',
-            $plugin_url . 'includes/js/fetch-sticky-comment.js',
-            array('jquery', 'sticky-comment-script'),
-            $fetch_version,
-            true
-        );
+    wp_enqueue_script(
+        'fetch-sticky-comment-script',
+        $plugin_url . 'includes/js/fetch-sticky-comment.js',
+        array('jquery', 'sticky-comment-script'),
+        $fetch_version,
+        true
+    );
 
-        wp_enqueue_script(
-            'remove-sticky-comment-script',
-            $plugin_url . 'includes/js/remove-sticky-comment.js',
-            array('jquery', 'sticky-comment-script'),
-            $remove_version,
-            true
-        );
+    wp_enqueue_script(
+        'remove-sticky-comment-script',
+        $plugin_url . 'includes/js/remove-sticky-comment.js',
+        array('jquery', 'sticky-comment-script'),
+        $remove_version,
+        true
+    );
 
-        wp_enqueue_script(
-            'create-sticky-comment-script',
-            $plugin_url . 'includes/js/create-sticky-comment.js',
-            array('jquery', 'sticky-comment-script'),
-            $create_version,
-            true
-        );
+    wp_enqueue_script(
+        'create-sticky-comment-script',
+        $plugin_url . 'includes/js/create-sticky-comment.js',
+        array('jquery', 'sticky-comment-script'),
+        $create_version,
+        true
+    );
 
-        wp_enqueue_script(
-            'sticky-user-feedback-script',
-            $plugin_url . 'includes/js/user-feedback.js',
-            array(),
-            $feedback_version,
-            true
-        );
+    wp_enqueue_script(
+        'sticky-user-feedback-script',
+        $plugin_url . 'includes/js/user-feedback.js',
+        array(),
+        $feedback_version,
+        true
+    );
 
     // Use queried object ID for reliability across themes/contexts
     $post_id = (int) get_queried_object_id();
@@ -503,13 +511,13 @@ function sticky_comment_enqueue_scripts() {
     wp_localize_script('create-sticky-comment-script', 'my_ajax_object', $base);
 
     wp_enqueue_style(
-            'sticky-comment-style',
-            $plugin_url . 'sticky-comment.css',
-            array(),
-            $css_version
-        );
+        'sticky-comment-style',
+        $plugin_url . 'sticky-comment.css',
+        array(),
+        $css_version
+    );
 
-        $theme_css = ":root {
+    $theme_css = ".sticky-notes-container {
             --sticky-primary: {$theme['primary']};
             --sticky-primary-hover: {$theme['primary_hover']};
             --sticky-primary-shadow: {$theme['primary_shadow']};
@@ -517,143 +525,144 @@ function sticky_comment_enqueue_scripts() {
             --sticky-primary-dark: {$theme['primary_dark']};
         }";
 
-        wp_add_inline_style('sticky-comment-style', $theme_css);
+    wp_add_inline_style('sticky-comment-style', $theme_css);
 
-        $palette = get_option('sticky_comment_palette', 'midnight');
-        $themes = array(
-            'purple' => array(
-                'header' => 'linear-gradient(135deg,#8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)',
-                'header_hover' => 'linear-gradient(135deg,#7c3aed 0%, #6d28d9 50%, #581c87 100%)',
-                'bubble' => 'linear-gradient(135deg,#8b5cf6 0%, #7c3aed 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#7c3aed 0%, #6d28d9 100%)',
-                'action' => '#7c3aed'
-            ),
-            'blue' => array(
-                'header' => 'linear-gradient(135deg,#3b82f6 0%, #2563eb 50%, #1e40af 100%)',
-                'header_hover' => 'linear-gradient(135deg,#2563eb 0%, #1d4ed8 50%, #1e3a8a 100%)',
-                'bubble' => 'linear-gradient(135deg,#3b82f6 0%, #1d4ed8 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#1d4ed8 0%, #1e3a8a 100%)',
-                'action' => '#2563eb'
-            ),
-            'orange' => array(
-                'header' => 'linear-gradient(135deg,#fb923c 0%, #f97316 50%, #ea580c 100%)',
-                'header_hover' => 'linear-gradient(135deg,#f97316 0%, #ea580c 50%, #c2410c 100%)',
-                'bubble' => 'linear-gradient(135deg,#fb923c 0%, #ea580c 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#ea580c 0%, #c2410c 100%)',
-                'action' => '#ea580c'
-            ),
-            'slate' => array(
-                'header' => 'linear-gradient(135deg,#64748b 0%, #475569 50%, #334155 100%)',
-                'header_hover' => 'linear-gradient(135deg,#475569 0%, #334155 50%, #1e293b 100%)',
-                'bubble' => 'linear-gradient(135deg,#64748b 0%, #475569 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#475569 0%, #334155 100%)',
-                'action' => '#475569'
-            ),
-            'sunset' => array(
-                'header' => 'linear-gradient(135deg,#f59e0b 0%, #ea580c 50%, #dc2626 100%)',
-                'header_hover' => 'linear-gradient(135deg,#ea580c 0%, #dc2626 50%, #b91c1c 100%)',
-                'bubble' => 'linear-gradient(135deg,#f59e0b 0%, #dc2626 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#ea580c 0%, #b91c1c 100%)',
-                'action' => '#dc2626'
-            ),
-            'ocean' => array(
-                'header' => 'linear-gradient(135deg,#0891b2 0%, #0369a1 50%, #0284c7 100%)',
-                'header_hover' => 'linear-gradient(135deg,#0369a1 0%, #0284c7 50%, #0369a1 100%)',
-                'bubble' => 'linear-gradient(135deg,#0891b2 0%, #0369a1 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#0369a1 0%, #0284c7 100%)',
-                'action' => '#0891b2'
-            ),
-            'aurora' => array(
-                'header' => 'linear-gradient(135deg,#06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)',
-                'header_hover' => 'linear-gradient(135deg,#0891b2 0%, #2563eb 50%, #7c3aed 100%)',
-                'bubble' => 'linear-gradient(135deg,#06b6d4 0%, #3b82f6 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#0891b2 0%, #1d4ed8 100%)',
-                'action' => '#0891b2'
-            ),
-            'midnight' => array(
-                'header' => 'linear-gradient(135deg,#0f172a 0%, #1e293b 50%, #334155 100%)',
-                'header_hover' => 'linear-gradient(135deg,#1e293b 0%, #334155 50%, #475569 100%)',
-                'bubble' => 'linear-gradient(135deg,#1e293b 0%, #334155 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#334155 0%, #475569 100%)',
-                'action' => '#334155'
-            ),
-            'candy' => array(
-                'header' => 'linear-gradient(135deg,#ec4899 0%, #d946ef 40%, #8b5cf6 100%)',
-                'header_hover' => 'linear-gradient(135deg,#db2777 0%, #c026d3 40%, #7c3aed 100%)',
-                'bubble' => 'linear-gradient(135deg,#ec4899 0%, #8b5cf6 100%)',
-                'bubble_hover' => 'linear-gradient(135deg,#c026d3 0%, #7c3aed 100%)',
-                'action' => '#c026d3'
-            )
-        );
+    $palette = get_option('sticky_comment_palette', 'midnight');
+    $themes = array(
+        'purple' => array(
+            'header' => 'linear-gradient(135deg,#8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)',
+            'header_hover' => 'linear-gradient(135deg,#7c3aed 0%, #6d28d9 50%, #581c87 100%)',
+            'bubble' => 'linear-gradient(135deg,#8b5cf6 0%, #7c3aed 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#7c3aed 0%, #6d28d9 100%)',
+            'action' => '#7c3aed'
+        ),
+        'blue' => array(
+            'header' => 'linear-gradient(135deg,#3b82f6 0%, #2563eb 50%, #1e40af 100%)',
+            'header_hover' => 'linear-gradient(135deg,#2563eb 0%, #1d4ed8 50%, #1e3a8a 100%)',
+            'bubble' => 'linear-gradient(135deg,#3b82f6 0%, #1d4ed8 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#1d4ed8 0%, #1e3a8a 100%)',
+            'action' => '#2563eb'
+        ),
+        'orange' => array(
+            'header' => 'linear-gradient(135deg,#fb923c 0%, #f97316 50%, #ea580c 100%)',
+            'header_hover' => 'linear-gradient(135deg,#f97316 0%, #ea580c 50%, #c2410c 100%)',
+            'bubble' => 'linear-gradient(135deg,#fb923c 0%, #ea580c 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#ea580c 0%, #c2410c 100%)',
+            'action' => '#ea580c'
+        ),
+        'slate' => array(
+            'header' => 'linear-gradient(135deg,#64748b 0%, #475569 50%, #334155 100%)',
+            'header_hover' => 'linear-gradient(135deg,#475569 0%, #334155 50%, #1e293b 100%)',
+            'bubble' => 'linear-gradient(135deg,#64748b 0%, #475569 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#475569 0%, #334155 100%)',
+            'action' => '#475569'
+        ),
+        'sunset' => array(
+            'header' => 'linear-gradient(135deg,#f59e0b 0%, #ea580c 50%, #dc2626 100%)',
+            'header_hover' => 'linear-gradient(135deg,#ea580c 0%, #dc2626 50%, #b91c1c 100%)',
+            'bubble' => 'linear-gradient(135deg,#f59e0b 0%, #dc2626 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#ea580c 0%, #b91c1c 100%)',
+            'action' => '#dc2626'
+        ),
+        'ocean' => array(
+            'header' => 'linear-gradient(135deg,#0891b2 0%, #0369a1 50%, #0284c7 100%)',
+            'header_hover' => 'linear-gradient(135deg,#0369a1 0%, #0284c7 50%, #0369a1 100%)',
+            'bubble' => 'linear-gradient(135deg,#0891b2 0%, #0369a1 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#0369a1 0%, #0284c7 100%)',
+            'action' => '#0891b2'
+        ),
+        'aurora' => array(
+            'header' => 'linear-gradient(135deg,#06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)',
+            'header_hover' => 'linear-gradient(135deg,#0891b2 0%, #2563eb 50%, #7c3aed 100%)',
+            'bubble' => 'linear-gradient(135deg,#06b6d4 0%, #3b82f6 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#0891b2 0%, #1d4ed8 100%)',
+            'action' => '#0891b2'
+        ),
+        'midnight' => array(
+            'header' => 'linear-gradient(135deg,#0f172a 0%, #1e293b 50%, #334155 100%)',
+            'header_hover' => 'linear-gradient(135deg,#1e293b 0%, #334155 50%, #475569 100%)',
+            'bubble' => 'linear-gradient(135deg,#1e293b 0%, #334155 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#334155 0%, #475569 100%)',
+            'action' => '#334155'
+        ),
+        'candy' => array(
+            'header' => 'linear-gradient(135deg,#ec4899 0%, #d946ef 40%, #8b5cf6 100%)',
+            'header_hover' => 'linear-gradient(135deg,#db2777 0%, #c026d3 40%, #7c3aed 100%)',
+            'bubble' => 'linear-gradient(135deg,#ec4899 0%, #8b5cf6 100%)',
+            'bubble_hover' => 'linear-gradient(135deg,#c026d3 0%, #7c3aed 100%)',
+            'action' => '#c026d3'
+        )
+    );
 
-        $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['midnight'];
-        $header_gradient = $theme['header'];
-        $header_hover_gradient = $theme['header_hover'];
-        $bubble_gradient = $theme['bubble'];
-        $bubble_hover_gradient = $theme['bubble_hover'];
-        $action_color = $theme['action'];
+    $theme = isset($themes[$palette]) ? $themes[$palette] : $themes['midnight'];
+    $header_gradient = $theme['header'];
+    $header_hover_gradient = $theme['header_hover'];
+    $bubble_gradient = $theme['bubble'];
+    $bubble_hover_gradient = $theme['bubble_hover'];
+    $action_color = $theme['action'];
 
-        $custom_css = "
-        .sticky-handle { background: {$header_gradient} !important; }
-        .sticky-handle:hover { background: {$header_hover_gradient} !important; }
-        .sticky-comment-save { background: {$header_gradient} !important; }
-        .sticky-comment-save:hover { background: {$header_hover_gradient} !important; }
-        .sticky-modal-header { background: {$header_gradient} !important; }
-        .sticky-modal-assign-header { background: {$header_gradient} !important; }
-        .sticky-assign-button { background: {$header_gradient} !important; }
-        .sticky-assign-button:hover { background: {$header_hover_gradient} !important; }
-        .sticky-bubble { background: {$bubble_gradient} !important; box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.12) !important; }
-        .sticky-bubble:hover { background: {$bubble_hover_gradient} !important; transform: scale(1.1) translateY(-4px) !important; box-shadow: 0 12px 40px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.15) !important; }
-        .sticky-actions-item { color: {$action_color} !important; }
-        .sticky-note-item-action { color: {$action_color} !important; }
-        .sticky-loader { color: {$action_color} !important; }
+    $custom_css = "
+        .sticky-notes-container .sticky-handle { background: {$header_gradient} !important; }
+        .sticky-notes-container .sticky-handle:hover { background: {$header_hover_gradient} !important; }
+        .sticky-notes-container .sticky-comment-save { background: {$header_gradient} !important; }
+        .sticky-notes-container .sticky-comment-save:hover { background: {$header_hover_gradient} !important; }
+        .sticky-notes-container .sticky-modal-header { background: {$header_gradient} !important; }
+        .sticky-notes-container .sticky-modal-assign-header { background: {$header_gradient} !important; }
+        .sticky-notes-container .sticky-assign-button { background: {$header_gradient} !important; }
+        .sticky-notes-container .sticky-assign-button:hover { background: {$header_hover_gradient} !important; }
+        .sticky-notes-container .sticky-bubble { background: {$bubble_gradient} !important; box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.12) !important; }
+        .sticky-notes-container .sticky-bubble:hover { background: {$bubble_hover_gradient} !important; transform: scale(1.1) translateY(-4px) !important; box-shadow: 0 12px 40px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.15) !important; }
+        .sticky-notes-container .sticky-actions-item { color: {$action_color} !important; }
+        .sticky-notes-container .sticky-note-item-action { color: {$action_color} !important; }
+        .sticky-notes-container .sticky-loader { color: {$action_color} !important; }
 
         /* Theme-aware priority popover + choices */
-        .sticky-priority-popup {
+        .sticky-notes-container .sticky-priority-popup {
           border: 1px solid transparent !important;
           background: linear-gradient(rgba(255,255,255,0.94), rgba(255,255,255,0.94)) padding-box,
                       {$header_gradient} border-box !important;
         }
-        .sticky-priority-choice:hover {
+        .sticky-notes-container .sticky-priority-choice:hover {
           border-color: {$action_color} !important;
           box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
         }
-        .sticky-priority-choice.is-active {
+        .sticky-notes-container .sticky-priority-choice.is-active {
           border: 1px solid transparent !important;
           background: linear-gradient(#ffffff, #ffffff) padding-box,
                       {$header_gradient} border-box !important;
           box-shadow: 0 0 0 3px rgba(0,0,0,0.02), 0 6px 18px rgba(0,0,0,0.08) !important;
         }
-        .sticky-priority-choice.is-active .sticky-priority-choice-label {
+        .sticky-notes-container .sticky-priority-choice.is-active .sticky-priority-choice-label {
           color: {$action_color} !important;
         }
 
         /* Theme-aware row toggle and chevron */
-        .sticky-row-toggle { color: {$action_color} !important; }
-        .sticky-row-toggle:hover { color: {$action_color} !important; opacity: 0.9 !important; }
-        .sticky-toggle-chevron { border-top-color: {$action_color} !important; }
-        .sticky-list-row.open .sticky-row-toggle { color: {$action_color} !important; }
-        .sticky-list-row.open .sticky-toggle-chevron { border-top-color: {$action_color} !important; }
+        .sticky-notes-container .sticky-row-toggle { color: {$action_color} !important; }
+        .sticky-notes-container .sticky-row-toggle:hover { color: {$action_color} !important; opacity: 0.9 !important; }
+        .sticky-notes-container .sticky-toggle-chevron { border-top-color: {$action_color} !important; }
+        .sticky-notes-container .sticky-list-row.open .sticky-row-toggle { color: {$action_color} !important; }
+        .sticky-notes-container .sticky-list-row.open .sticky-toggle-chevron { border-top-color: {$action_color} !important; }
 
         /* Character counter themed */
-        .sticky-char-counter { color: {$action_color}; opacity: .85; }
+        .sticky-notes-container .sticky-char-counter { color: {$action_color}; opacity: .85; }
 
         /* Theme textarea scrollbar thumb for WebKit and Firefox */
-        .sticky-text { scrollbar-color: {$action_color}40 transparent !important; }
-        .sticky-text::-webkit-scrollbar-thumb { background: {$action_color}66 !important; }
-        .sticky-text::-webkit-scrollbar-thumb:hover { background: {$action_color}99 !important; }
-        .sticky-assign-results { scrollbar-color: {$action_color}40 transparent !important; }
-        .sticky-assign-results::-webkit-scrollbar-thumb { background: {$action_color}66 !important; }
-        .sticky-assign-results::-webkit-scrollbar-thumb:hover { background: {$action_color}99 !important; }
+        .sticky-notes-container .sticky-text { scrollbar-color: {$action_color}40 transparent !important; }
+        .sticky-notes-container .sticky-text::-webkit-scrollbar-thumb { background: {$action_color}66 !important; }
+        .sticky-notes-container .sticky-text::-webkit-scrollbar-thumb:hover { background: {$action_color}99 !important; }
+        .sticky-notes-container .sticky-assign-results { scrollbar-color: {$action_color}40 transparent !important; }
+        .sticky-notes-container .sticky-assign-results::-webkit-scrollbar-thumb { background: {$action_color}66 !important; }
+        .sticky-notes-container .sticky-assign-results::-webkit-scrollbar-thumb:hover { background: {$action_color}99 !important; }
         /* Expose theme color for runtime CSS consumers */
-        :root { --sticky-action-bg: {$action_color}; }
+        .sticky-notes-container { --sticky-action-bg: {$action_color}; }
         ";
     wp_add_inline_style('sticky-comment-style', $custom_css);
 }
 
 add_action('wp_enqueue_scripts', 'sticky_comment_enqueue_scripts');
 
-function sticky_notes_admin_scripts($hook) {
+function sticky_notes_admin_scripts($hook)
+{
     if ($hook !== 'toplevel_page_sticky-comments') return;
     $plugin_url = plugin_dir_url(dirname(dirname(__DIR__)) . '/sticky-comment.php');
     $plugin_dir = plugin_dir_path(dirname(dirname(__DIR__)) . '/sticky-comment.php');
@@ -700,13 +709,13 @@ function sticky_notes_admin_scripts($hook) {
     $min_cap = get_option('sticky_comment_settings_min_cap', 'manage_options');
     $can_edit = current_user_can($min_cap) ? 1 : 0;
 
-    foreach (array('remove-sticky-comment-script','create-sticky-comment-script') as $handle) {
+    foreach (array('remove-sticky-comment-script', 'create-sticky-comment-script') as $handle) {
         wp_localize_script($handle, 'my_ajax_object', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('sticky_comment_nonce'),
             'post_id'  => $post_id,
             'page_url' => $page_url,
-            'max_notes'=> $max_notes,
+            'max_notes' => $max_notes,
             'can_edit' => $can_edit,
             'current_user_id' => get_current_user_id(),
             'current_user_login' => wp_get_current_user() ? wp_get_current_user()->user_login : '',
@@ -717,7 +726,7 @@ function sticky_notes_admin_scripts($hook) {
     wp_enqueue_script(
         'sticky-notes-admin-tabs',
         $plugin_url . 'includes/js/admin-sticky-comment.js',
-        array('jquery','create-sticky-comment-script'),
+        array('jquery', 'create-sticky-comment-script'),
         $admin_version,
         true
     );

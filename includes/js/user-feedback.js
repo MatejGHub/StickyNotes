@@ -17,7 +17,11 @@ function showNotification(message, type = "info", duration = 3000) {
   notification.textContent = message;
 
   // Add to page
-  document.body.appendChild(notification);
+  const mountRoot =
+    typeof window.getStickyNotesContainer === "function"
+      ? window.getStickyNotesContainer()
+      : document.body;
+  mountRoot.appendChild(notification);
 
   // Animate in
   setTimeout(() => {

@@ -49,6 +49,16 @@ try {
 } catch (_) {}
 const maxNotes = CreateStickyUtils.getMaxNotes();
 
+function getStickyNotesMountRoot() {
+  if (typeof window.getStickyNotesContainer === "function") {
+    const container = window.getStickyNotesContainer();
+    if (container) {
+      return container;
+    }
+  }
+  return document.body;
+}
+
 function createStickyNote(xPercent, yPercent, elementPath, options) {
   const opts = options || {};
   const skipLimit = !!opts.skipLimit;
@@ -60,7 +70,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
   let effectiveCount = 0;
   try {
     effectiveCount = Array.from(
-      document.querySelectorAll(".sticky-note")
+      document.querySelectorAll(".sticky-note"),
     ).filter((n) => n.dataset.completed !== "1").length;
   } catch (_) {
     effectiveCount = CreateStickyUtils.getCurrentNoteCount();
@@ -71,7 +81,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
       window.stickyFeedback.showNotification(
         "You reached the limit of sticky notes.",
         "warning",
-        2500
+        2500,
       );
     } else {
       alert("You reached the limit of sticky notes.");
@@ -91,7 +101,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
   if (markCompleted) {
     wrapper.dataset.completed = "1";
   }
-  document.body.appendChild(wrapper);
+  getStickyNotesMountRoot().appendChild(wrapper);
 
   CreateStickyUtils.focusNote(wrapper);
 
@@ -398,7 +408,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
         .then((res) => {
           if (res && res.success && res.data && res.data.id) return res.data;
           throw new Error(
-            (res && (res.error || res.data?.message)) || "Upload failed"
+            (res && (res.error || res.data?.message)) || "Upload failed",
           );
         });
     });
@@ -499,7 +509,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
         const isMe = (function () {
           try {
             const currentId = Number(
-              window.my_ajax_object && window.my_ajax_object.current_user_id
+              window.my_ajax_object && window.my_ajax_object.current_user_id,
             );
             if (currentId && Number(c && c.user_id) === currentId) return true;
             const curEmail =
@@ -572,7 +582,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
             Array.isArray(window.my_ajax_object.users)
           ) {
             const user = window.my_ajax_object.users.find(
-              (u) => u && Number(u.id) === id
+              (u) => u && Number(u.id) === id,
             );
             if (
               user &&
@@ -612,7 +622,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
         // Delete own comment button (hidden in view-only mode)
         try {
           const currentId = Number(
-            window.my_ajax_object && window.my_ajax_object.current_user_id
+            window.my_ajax_object && window.my_ajax_object.current_user_id,
           );
           const isOwner = currentId && Number(c && c.user_id) === currentId;
           if (isOwner && !viewOnly) {
@@ -651,7 +661,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
                   if (window.stickyFeedback) {
                     window.stickyFeedback.showNotification(
                       "Failed to delete comment",
-                      "error"
+                      "error",
                     );
                   }
                 })
@@ -742,7 +752,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
         if (window.stickyFeedback) {
           window.stickyFeedback.showNotification(
             "Failed to add comment",
-            "error"
+            "error",
           );
         }
       })
@@ -766,7 +776,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
   function updatePriorityBadge() {
     const p = parseInt(
       (wrapper.dataset && wrapper.dataset.priority) || priorityValue || 2,
-      10
+      10,
     );
     if (!priorityBadge) return;
     let dotClass;
@@ -841,7 +851,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
                   window.stickyFeedback.showNotification(
                     "Assignee updated",
                     "success",
-                    1500
+                    1500,
                   );
                 }
               })
@@ -849,7 +859,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
                 if (window.stickyFeedback) {
                   window.stickyFeedback.showNotification(
                     "Failed to assign",
-                    "error"
+                    "error",
                   );
                 }
                 saveButton.classList.remove("sticky-save-hidden");
@@ -887,10 +897,10 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
       actions.appendChild(pop);
       const currentPriority = parseInt(
         (wrapper.dataset && wrapper.dataset.priority) || priorityValue || 2,
-        10
+        10,
       );
       const choiceButtons = Array.from(
-        pop.querySelectorAll(".sticky-priority-choice")
+        pop.querySelectorAll(".sticky-priority-choice"),
       );
       choiceButtons.forEach((btn) => {
         const val = parseInt(btn.getAttribute("data-value"), 10);
@@ -912,7 +922,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
               window.stickyFeedback.showNotification(
                 "Priority updated",
                 "success",
-                1200
+                1200,
               );
             }
           })
@@ -920,7 +930,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
             if (window.stickyFeedback) {
               window.stickyFeedback.showNotification(
                 "Failed to update priority",
-                "error"
+                "error",
               );
             }
             saveButton.classList.remove("sticky-save-hidden");
@@ -981,7 +991,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
             window.stickyFeedback.showNotification(
               "Marked complete",
               "success",
-              1500
+              1500,
             );
           }
         })
@@ -996,7 +1006,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
           if (window.stickyFeedback) {
             window.stickyFeedback.showNotification(
               "Failed to mark complete",
-              "error"
+              "error",
             );
           }
           saveButton.classList.remove("sticky-save-hidden");
@@ -1021,7 +1031,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
             window.stickyFeedback.showNotification(
               "Marked incomplete",
               "success",
-              1500
+              1500,
             );
           }
         })
@@ -1068,7 +1078,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
       try {
         window.currentNoteCount = Math.max(
           0,
-          Number(window.currentNoteCount || 0) - 1
+          Number(window.currentNoteCount || 0) - 1,
         );
       } catch (_) {}
       if (window.updateBubbleCount) {
@@ -1307,12 +1317,12 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
             throw new Error(
               res && (res.error || res.data?.message)
                 ? res.error || res.data?.message
-                : "Failed"
+                : "Failed",
             );
           }
           // Remove from local list and re-render
           imageItems = imageItems.filter(
-            (it) => Number(it.id) !== attachmentId
+            (it) => Number(it.id) !== attachmentId,
           );
           if (imageItems.length === 0) {
             renderImages(); // Update the indicator to hide it
@@ -1330,7 +1340,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
           if (window.stickyFeedback) {
             window.stickyFeedback.showNotification(
               "Failed to delete image",
-              "error"
+              "error",
             );
           }
         })
@@ -1371,7 +1381,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
       content.appendChild(nextBtn);
     }
     overlay.appendChild(content);
-    document.body.appendChild(overlay);
+    getStickyNotesMountRoot().appendChild(overlay);
     renderSlide();
   }
 
@@ -1410,7 +1420,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
       priority: String(
         wrapper && wrapper.dataset && wrapper.dataset.priority
           ? wrapper.dataset.priority
-          : priorityValue || 2
+          : priorityValue || 2,
       ),
       is_completed: completedFlag,
       is_done: completedFlag,
@@ -1420,7 +1430,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
       images: JSON.stringify(
         (imageItems || [])
           .map((it) => Number(it.id))
-          .filter((n) => Number.isFinite(n))
+          .filter((n) => Number.isFinite(n)),
       ),
       device:
         (wrapper && wrapper.dataset && wrapper.dataset.device) ||
@@ -1431,7 +1441,11 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
       saveParams.is_new = notifiedOnce ? "0" : "1";
       notifiedOnce = true;
     }
-    if (my_ajax_object.is_guest === 1 && my_ajax_object.guest_token && my_ajax_object.guest_id) {
+    if (
+      my_ajax_object.is_guest === 1 &&
+      my_ajax_object.guest_token &&
+      my_ajax_object.guest_id
+    ) {
       saveParams.guest_token = my_ajax_object.guest_token;
       saveParams.guest_id = my_ajax_object.guest_id;
     }
@@ -1450,7 +1464,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
             window.stickyFeedback.showNotification(
               "Note saved successfully!",
               "success",
-              2000
+              2000,
             );
           }
           if (data.data?.email_sent === "sent" && window.stickyFeedback) {
@@ -1458,24 +1472,24 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
               window.stickyFeedback.showNotification(
                 "Email notification sent",
                 "success",
-                3000
+                3000,
               );
             }, 500);
-          } else if (data.data?.email_sent === "failed" && window.stickyFeedback) {
-            const reason = data.data?.email_error || "Email notification failed to send";
+          } else if (
+            data.data?.email_sent === "failed" &&
+            window.stickyFeedback
+          ) {
+            const reason =
+              data.data?.email_error || "Email notification failed to send";
             setTimeout(() => {
-              window.stickyFeedback.showNotification(
-                reason,
-                "error",
-                6000
-              );
+              window.stickyFeedback.showNotification(reason, "error", 6000);
             }, 500);
           }
         } else if (data.error || data.data?.message) {
           if (window.stickyFeedback) {
             window.stickyFeedback.showNotification(
               data.error || data.data?.message,
-              "error"
+              "error",
             );
           }
         }
@@ -1484,7 +1498,7 @@ function createStickyNote(xPercent, yPercent, elementPath, options) {
         if (window.stickyFeedback) {
           window.stickyFeedback.showNotification(
             "Failed to save note",
-            "error"
+            "error",
           );
         }
       });
@@ -1570,7 +1584,7 @@ if (typeof window.openStickyAssignModal !== "function") {
         "</div>";
 
       overlay.appendChild(modal);
-      document.body.appendChild(overlay);
+      getStickyNotesMountRoot().appendChild(overlay);
 
       const closeBtn = modal.querySelector("#sticky-assign-close");
       const cancelBtn = modal.querySelector("#sticky-assign-cancel");
@@ -1582,7 +1596,7 @@ if (typeof window.openStickyAssignModal !== "function") {
         } catch (_) {}
       }
       [closeBtn, cancelBtn].forEach(
-        (btn) => btn && btn.addEventListener("click", hideAndRemoveOverlay)
+        (btn) => btn && btn.addEventListener("click", hideAndRemoveOverlay),
       );
       overlay.addEventListener("click", (ev) => {
         if (ev.target === overlay) {
